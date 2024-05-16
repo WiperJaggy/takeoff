@@ -74,40 +74,10 @@ exports.login = async (req, res, next) => {
         process.env.ACCESS_TOKEN_SECRET,
         { expiresIn: '24h' }
     )
-    
-};
-
-exports.login2 = async (req, res, next) => {
-    const { username, password } = req.body;
-
-    if (!username || !password) {
-        const error = new Error('Please provide username and password');
-        error.statusCode = 400;
-        throw error;
-    }
-
-    const user = await User.findOne({ username: username });
-    if (!user) {
-        const error = new Error('Invalid credentials');
-        error.statusCode = 401;
-        throw error;
-    }
-
-    const isPasswordCorrect = await bcrypt.compare(password, user.password);
-    if (!isPasswordCorrect) {
-        const error = new Error('Invalid credentials');
-        error.statusCode = 401;
-        throw error;
-    }
-
-    const token = jwt.sign(
-        { username: user.username, userId: user._id.toString(), role: user.role },
-        process.env.ACCESS_TOKEN_SECRET,
-        { expiresIn: '24h' }
-    )
-
     res.status(200).json({ token: token, userId: user._id.toString(), username: username });
+
 };
+
 
 // exports.adminLogin = async (req, res, next) => {
 //     try {
