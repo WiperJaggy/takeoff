@@ -15,7 +15,7 @@ const bodyParser = require('body-parser');
 const authRouter = require('./routes/auth');
 
 // middleware
-
+const trackingMiddleware = require('./middleware/trackingMiddleware')
 
 
 app.use((req, res, next) => {
@@ -26,6 +26,7 @@ app.use((req, res, next) => {
 });
 
 app.use(bodyParser.json());
+app.use(trackingMiddleware);
 
 app.use('/auth', authRouter);
 app.use((req, res, next) => {
