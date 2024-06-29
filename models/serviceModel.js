@@ -1,17 +1,10 @@
 const mongoose = require('mongoose');
 
 const serviceSchema = new mongoose.Schema({
-serviceName :{
+serviceType :{
     type:String,
-    required: [true,'please provide ']
-},
-description:{
-    type:String,
-    required: [true,'please provide some decription about your service']
-},
-available:{
-    type:Boolean,
-    default:true
+    required: [true,'please provide the type of the service'],
+    unique:true
 },
 createdAt:{
     type:Date,
@@ -19,8 +12,5 @@ createdAt:{
 }
 
 })
-
-
-
 const Service = mongoose.model('Service',serviceSchema);
 module.exports = Service;

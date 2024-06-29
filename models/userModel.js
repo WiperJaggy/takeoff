@@ -54,6 +54,10 @@ const userSchema = new mongoose.Schema({
         type: Date,
         required: [true,"please provide your Age."]
     },
+    identifier :{
+        type: Number,
+        required: [true,"please provide your identifier."]
+    }
 
 } ,  
     createdAt: { type: Date,

@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+
 const tripSchema = new mongoose.Schema({
     title:{
         type:String,
@@ -14,32 +15,24 @@ const tripSchema = new mongoose.Schema({
             type:String,
             required: [true,'Please provide trip description']
             },
+            startDate:{
+                type:Date,
+                required:[true, "A Tour must have a startDate"]
+            },
+            endDate:{
+                type:Date,
+                required:[true, "A Tour must have a endDate"]
+            },
             price:{
                 type: Number,
                 required :[true, 'A tour must have a price']
             },
-            startDate:{
-                type:Date,
-                required:[true, "A Tour must have a startDate"]
-                },
-                endDate:{
-                    type:Date,
-                    required:[true, "A Tour must have a endDate"]
-                    },
-                    destination:{
-                        type:String,
-                        required:[true, "A Tour must have a destination"]
-                        },
-                            priceDiscount: {
-                                type:Number,
-                                validate:{
-                                   validator: function(val){
-                                       //this only points to current doc on New document creation
-                                       return val < this.price;
-                                   },
-                                   message:'the price discount ({VALUE}) must be less than the price'
-                                }
-                               },
+             priceDiscount: {
+                type: Number,
+                min: 0,
+                max: 100,
+                default: 0,
+            },
             startLocation:{
          //GeoJSon
          type:{
@@ -51,7 +44,18 @@ const tripSchema = new mongoose.Schema({
         address: String,
         description: String
                          },
-    locations:[
+            destination:{
+            //GeoJSon
+            type:{
+                type: String,
+                default: 'Point',
+                enum:['Point']
+            },
+            coordinates: [Number],
+            address: String,
+            description: String
+                            },
+    itinerary:[
         { 
         type:{
             type: String ,
@@ -68,6 +72,22 @@ const tripSchema = new mongoose.Schema({
         type:Number,
         required:[true, "A Tour must have a maxGrouppSize"]
     },
+    availableSeats:{
+        type:Number,
+        default: this.maxGroupSize
+    },
+    createdAt:{
+        type: Date,
+        default: Date.now(),
+        select:false
+    },
+    availability:{
+        type: Boolean,
+        default: true
+    },
+    updatedAt:{
+        type: Date
+    }
     // ratingsAverage:{
     //     type:Number,
     //     default:4.5,
@@ -85,22 +105,16 @@ const tripSchema = new mongoose.Schema({
     //     min:[1,'the minimum rating is 1'],
     //     max:[5,'the maximum rating is 5']
     // },
-    createdAt:{
-        type: Date,
-        default: Date.now(),
-        select:false
-    }
 },
 {
     toJSON:{virtuals:true},
     toObject:{virtuals:true}
 })
-tripSchema.pre(/^find/, function(next) {
-    this.agencyId = function() {
-        return this.agencyId;
-      }
-    next();
-    });
-
-const Trip = mongoose.model('Trip', tripSchema);
-module.exports = Trip
+tripSchema.virtual('agency', {
+    ref: 'Agency',
+    localField: 'agency',
+    foreignField: '_id',
+    justOne: true
+  });
+ const Trip = mongoose.model('Trip', tripSchema);
+ module.exports = Trip;

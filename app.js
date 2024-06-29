@@ -17,6 +17,13 @@ const agencyRouter = require('./routes/agencyRoutes');
 const tripRouter = require('./routes/tripRoutes');
 const adminRouter = require('./routes/adminRoutes');
 const reviewRouter = require('./routes/reviewRoutes');
+const agecnyServiceRouter = require('./routes/agencyServiceRoutes')
+const serviceRouter = require('./routes/serviceRoutes');
+const bookingRouter = require('./routes/bookingRoutes');
+const paymentRouter = require('./routes/paymentRoutes');
+const carRouter = require('./routes/carRoutes');
+const flightRouter = require('./routes/filghtRoutes');
+const scholarshipRouter = require('./routes/scholarshipRoutes');
 // middleware
 const trackingMiddleware = require('./middleware/trackingMiddleware')
 
@@ -31,11 +38,18 @@ app.use((req, res, next) => {
 app.use(bodyParser.json());
 app.use(trackingMiddleware);
 
-app.use('/auth', authRouter);
 app.use('/agency',agencyRouter);
 app.use('/trips',tripRouter);
 app.use('/admin',adminRouter);
-app.use('/review',reviewRouter)
+app.use('/review',reviewRouter);
+app.use('/agencyService',agecnyServiceRouter);
+app.use('/service',serviceRouter);
+app.use('/booking',bookingRouter);
+app.use('/auth', authRouter);
+app.use('/payment',paymentRouter);
+app.use('/cars',carRouter);
+app.use('/flights',flightRouter);
+app.use('/scholarships',scholarshipRouter);
 console.log(process.env.NODE_ENV)
 app.use((req, res, next) => {
     res.status(404).send('Page not found');

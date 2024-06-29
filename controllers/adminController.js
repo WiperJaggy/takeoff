@@ -3,6 +3,7 @@ const catchAsync = require('../utils/catchAsync');
 const AppError = require('../utils/appError');
 const AgencyRequest = require('./../models/agencyRequestModel');
 const Agency = require('./../models/agencyModel');
+const Service = require('./../models/serviceModel');
 
 exports.getAdminDashboard = catchAsync(async (req, res, next) => {
     // Check if the user is authenticated and has the role of admin

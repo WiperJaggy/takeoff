@@ -4,7 +4,9 @@ const User = require('./../models/userModel');
 const Agency = require('./../models/agencyModel')
 const jwt = require('jsonwebtoken');
 const catchAsync = require('./../utils/catchAsync')
-const sendEmail = require('../utils/email');
+const mailgun = require('mailgun.js');
+const formData = require('form-data');
+const {sendVerificationEmail, sendPasswordResetEmail} = require('../utils/email');
 const crypto = require('crypto');
 const { updateSearchIndex } = require('../models/requests');
 const AgencyRequest = require('./../models/agencyRequestModel')
@@ -55,11 +57,11 @@ const signToken = (id) => {
     }
     const newUser = await User.create({
         userName: req.body.userName,
-        email:req.body.email,
-        identifier:req.body.identifier,
+        email:req.body.email, 
         profile:{
         firstName: req.body.profile.firstName,
         lastName:req.body.profile.lastName,
+        identifier:req.body.profile.identifier,
         birthdate: req.body.profile.birthdate},
         password:req.body.password,
         passwordConfirm:req.body.passwordConfirm,
@@ -203,6 +205,7 @@ exports.protectAgency = catchAsync(async (req, res, next) => {
   req.agencyId = currentAgency._id;
   next();
 });
+
 exports.restrictTo= (...roles) =>{
     return (req,res,next) =>{
         if(!roles.includes(req.user.role)){
@@ -213,46 +216,40 @@ exports.restrictTo= (...roles) =>{
 }
 
 exports.forgotPassword = catchAsync(async (req, res, next) => {
-    // 1. Get user or agency based on the posted email
-    const { email } = req.body;
-    const user = await User.findOne({ email });
-    const agency = await Agency.findOne({ email });
-  
-    if (!user && !agency) {
-      return next(new AppError('There is no user or agency with this email!', 404));
-    }
-  
-    // Find the appropriate document for password reset
-    const resetDocument = user || agency;
-  
-    // 2. Generate the random reset token
-    const resetToken = resetDocument.createPasswordResetToken();
+  // 1. Get user or agency based on the posted email
+  const { email } = req.body;
+  const user = await User.findOne({ email });
+  const agency = await Agency.findOne({ email });
+
+  if (!user && !agency) {
+    return next(new AppError('There is no user or agency with this email!', 404));
+  }
+
+  // Find the appropriate document for password reset
+  const resetDocument = user || agency;
+
+  // 2. Generate the random reset token
+  const resetToken = resetDocument.createPasswordResetToken();
+  await resetDocument.save({ validateBeforeSave: false });
+
+  // 3. Send the reset token to the user/agency's email
+  const resetURL = `${req.protocol}://${req.get('host')}/auth/resetPassword/${resetToken}`;
+
+  try {
+    await sendPasswordResetEmail( resetDocument.email, resetURL);
+
+    res.status(200).json({
+      status: 'success',
+      message: 'Token sent to email',
+    });
+  } catch (err) {
+    resetDocument.passwordResetToken = undefined;
+    resetDocument.passwordResetExpires = undefined;
     await resetDocument.save({ validateBeforeSave: false });
-  
-    // 3. Send the reset token to the user/agency's email
-    const resetURL = `${req.protocol}://${req.get('host')}/auth/resetPassword/${resetToken}`;
-  
-    const message = `Forgot your password? Submit a PATCH request with your new password and passwordConfirm to ${resetURL}.\nIf you didn't forget your password, please ignore this email.`;
-  
-    try {
-      await sendEmail({
-        email: resetDocument.email,
-        subject: 'Your password reset token (valid for 10 minutes)',
-        message,
-      });
-  
-      res.status(200).json({
-        status: 'success',
-        message: 'Token sent to email',
-      });
-    } catch (err) {
-      resetDocument.passwordResetToken = undefined;
-      resetDocument.passwordResetExpires = undefined;
-      await resetDocument.save({ validateBeforeSave: false });
-  
-      return next(new AppError('There was an error sending the email. Please try again later!', 500));
-    }
-  });
+
+    return next(new AppError('There was an error sending the email. Please try again later!', 500));
+  }
+});
 exports.resetPassword = catchAsync(async (req, res, next) => {
     // 1. Get user or agency based on the token
     const hashedToken = crypto.createHash('sha256').update(req.params.token).digest('hex');

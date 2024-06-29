@@ -7,13 +7,32 @@ const bookingSchema = new mongoose.Schema({
  },
  service:{
     type: mongoose.Schema.ObjectId,
-    ref:'Service',
+    ref:'AgencyService',
     required:[true,'A booking must belong to a service']
  },
- totalPrice:{
-    type:Number,
-    required:[true,'A booking must have a price']
+ quantity:{
+   type: Number,
+   default :1,
  },
+ totalPrice: {
+   type: Number,
+   required: [true, 'A booking must have a price']
+ },
+  status: { type: String,
+    enum: [,'pending payment' ,'confirmed', 'cancelled'],
+    default: 'pending payment' 
+ },
+ numPeople: { type: Number,
+    min: 1
+    },
+ people: [
+   {
+     firstName: { type: String, required: true },
+     lastName: { type: String, required: true },
+     identifier: { type: String, required: true },
+     age:{type: Number , required : true}
+   }
+ ],
  creatdAt:{
     type:Date,
     default:Date.now()
@@ -22,5 +41,9 @@ const bookingSchema = new mongoose.Schema({
     type:Date
  }
 })
+bookingSchema.pre(/^find/, function(next) {
+   this.populate('service','serviceType');
+   next();
+ });
 const Booking = mongoose.model('Booking', bookingSchema);
 module.exports = Booking
