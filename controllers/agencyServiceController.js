@@ -1,22 +1,27 @@
 const Service = require('../models/serviceModel');
 const catchAsync = require('../utils/catchAsync');
 const AppError = require('./../utils/appError');
-const agencyService = require('./../models/agencyServiceModel');
 const AgencyService = require('./../models/agencyServiceModel');
+const AgencyRequest = require('../models/agencyRequestModel');
 
 exports.createService = catchAsync(async (req, res, next) => {
   const agencyId = req.agency.id;
+  const agencyRequest = req.query.agencyRequest;
   const { serviceType, description,price,discountPercentage } = req.body;
   
   // Check if the service already exists in the Service collection
+  let request = await AgencyRequest.findById(agencyRequest);
   let service = await Service.findOne({ serviceType });
 
+  if(request.status !== 'approved'){
+    return next(new AppError('This agency request is not approved yet. Please try again later.', 400));
+  }
   if (!service) {
     return next(new AppError('The service you are trying to provide is not included. Please reach the admin to add it.', 400));
   }
 
   // Check if the service is already associated with the agency
-  const existingAgencyService = await agencyService.findOne({
+  const existingAgencyService = await AgencyService.findOne({
     agencyId,
     serviceId: service._id,
   });
@@ -35,7 +40,7 @@ exports.createService = catchAsync(async (req, res, next) => {
   licenseExpiryDate.setFullYear(licenseExpiryDate.getFullYear() + 1);
 
   // Create a new agencyServices document
-  const newAgencyService = await agencyService.create({
+  const newAgencyService = await AgencyService.create({
     agencyId,
     serviceId: service._id,
     licenseExpiryDate,
@@ -49,7 +54,7 @@ exports.createService = catchAsync(async (req, res, next) => {
 
 exports.updateService = catchAsync(async (req, res, next) => {
   // Find the agencyService by ID
-  const agenService = await agencyService.findById(req.params.id);
+  const agenService = await AgencyService.findById(req.params.id);
 
   // Check if the agencyService exists
   if (!agenService) {
@@ -86,7 +91,7 @@ exports.updateService = catchAsync(async (req, res, next) => {
   }
 
   // Update the agencyService
-  const updatedAgencyService = await agencyService.findByIdAndUpdate(
+  const updatedAgencyService = await AgencyService.findByIdAndUpdate(
     req.params.id,
     updatedFields,
     {
@@ -104,7 +109,7 @@ exports.updateService = catchAsync(async (req, res, next) => {
 });
 
   exports.getAllAgencyServices=catchAsync(async(req,res,next)=>{
-    const agencyServices = await agencyService.find();
+    const agencyServices = await AgencyService.find();
     res.status(200).json({
       status:'success',
       results: agencyServices.length,
@@ -117,7 +122,7 @@ exports.updateService = catchAsync(async (req, res, next) => {
 
   exports.getAgencyServices = catchAsync(async (req, res, next) => {
     // Find all the agencyServices for the logged-in agency
-    const agencyServices = await agencyService.find({
+    const agencyServices = await AgencyService.find({
       agencyId: req.agency.id
     });
   
@@ -131,12 +136,13 @@ exports.updateService = catchAsync(async (req, res, next) => {
   });
 
   exports.deleteAgencyService = catchAsync(async(req,res,next)=>{
-    const agenService = await agencyService.findById(req.params.id);
+    const agenService = await AgencyService.findById(req.params.id);
 
     // Check if the agencyService exists
     if (!agenService) {
       return next(new AppError('No agencyService found with that ID', 404));
     }
+    console.log(agenService.agencyId._id.toString() )
     if (agenService.agencyId._id.toString() !== req.agency.id) {
       return next(new AppError('You are not authorized to update this agencyService', 403));
     }
@@ -165,3 +171,16 @@ exports.updateService = catchAsync(async (req, res, next) => {
       }
     });
   });
+
+  exports.getMyService = catchAsync(async(req,res,next)=>{
+    const agencyService = await AgencyService.findById(req.params.id);
+    if (agencyService.agencyId._id.toString() !== req.agency.id) {
+      return next(new AppError('You are not authorized to get this agencyService', 403));
+    }
+    res.status(200).json({
+      status:'success',
+      data:{
+        agencyService
+      }
+    })
+  })

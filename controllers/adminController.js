@@ -4,6 +4,21 @@ const AppError = require('../utils/appError');
 const AgencyRequest = require('./../models/agencyRequestModel');
 const Agency = require('./../models/agencyModel');
 const Service = require('./../models/serviceModel');
+const Booking = require('./../models/bookingModel');
+
+
+exports.getAgnecyRequest = catchAsync(async(req,res,next)=>{
+  const requestId = req.params.id;
+  const agencyRequest = await AgencyRequest.findById(requestId);
+  res.status(200).json({
+    status: 'success',
+    data: { agencyRequest
+      
+     },
+  });
+})
+
+
 
 exports.getAdminDashboard = catchAsync(async (req, res, next) => {
     // Check if the user is authenticated and has the role of admin
@@ -44,3 +59,19 @@ exports.updateRequestStatus = catchAsync(async (req, res, next) => {
     return next(new AppError('You are not authorized to access this resource', 403));
   }
 });
+
+
+// exports.getWeeklyReport = catchAsync(async(req,res,next)=>{
+//   const agencyId  = req.params;
+//   const report = await Booking.findById({agencyId}).populate([
+//     { path: 'agencyId', select: 'name' },
+//     { path:'service',  strictPopulate: false, select:'serviceType' }
+// ])
+
+//   res.status(200).json({
+//     status:'success',
+//     data:{
+//       report
+//     }
+//   })
+// })

@@ -1,74 +1,131 @@
-const {promisify} =require('util');
+const { promisify } = require('util');
 const AppError = require('./../utils/appError');
 const User = require('./../models/userModel');
-const Agency = require('./../models/agencyModel')
+const Agency = require('./../models/agencyModel');
 const jwt = require('jsonwebtoken');
-const catchAsync = require('./../utils/catchAsync')
-const mailgun = require('mailgun.js');
-const formData = require('form-data');
-const {sendVerificationEmail, sendPasswordResetEmail} = require('../utils/email');
+const catchAsync = require('./../utils/catchAsync');
+const Email = require('./../utils/email');
 const crypto = require('crypto');
+const bcrypt = require('bcrypt')
 const { updateSearchIndex } = require('../models/requests');
-const AgencyRequest = require('./../models/agencyRequestModel')
+const AgencyRequest = require('./../models/agencyRequestModel');
+
 const signToken = (id) => {
-    return jwt.sign({ id }, process.env.ACCESS_TOKEN_SECRET, {
-      expiresIn: process.env.JWT_EXPIRES,
-    });
+  return jwt.sign({ id }, process.env.ACCESS_TOKEN_SECRET, {
+    expiresIn: process.env.JWT_EXPIRES,
+  });
+};
+
+const createSendToken = (user, statusCode, res) => {
+  const token = signToken(user._id);
+  const cookieOptions = {
+    expires: new Date(
+      Date.now() + process.env.JWT_COOKIE_EXPIRES_IN * 24 * 60 * 60 * 1000
+    ),
+    httpOnly: true,
   };
-  
-  const createSendToken = (user, statusCode, res) => {
-    const token = signToken(user._id);
-    const cookieOptions = {
-      expires: new Date(
-        Date.now() + process.env.JWT_COOKIE_EXPIRES_IN * 24 * 60 * 60 * 1000
-      ),
-      httpOnly: true,
+  if (process.env.NODE_ENV === 'production') cookieOptions.secure = true;
+  res.cookie('jwt', token, cookieOptions);
+
+  // Remove sensitive data from the output
+  user.password = undefined;
+  user.verificationToken = undefined;
+  user.verified = undefined;
+
+  let responseData;
+  if (user.name && user.contactPerson.firstName && user.contactPerson.lastName) {
+    // Agency registration
+    responseData = {
+      agency: user,
     };
-    if (process.env.NODE_ENV === 'production') cookieOptions.secure = true;
-    res.cookie('jwt', token, cookieOptions);
+  } else {
+    // User registration
+    responseData = {
+      user,
+    };
+  }
+
+  res.status(statusCode).json({
+    status: 'success',
+    token,
+    data: responseData,
+  });
+};
+exports.registerUser = catchAsync(async (req, res, next) => {
+  if (await User.findOne({ userName: req.body.userName }) || await User.findOne({ email: req.body.email })) {
+    return next(new AppError('User already exists', 400));
+  }
   
-    // Remove sensitive data from the output
-    user.password = undefined;
+  const newUser = await User.create({
+    userName: req.body.userName,
+    email: req.body.email,
+    profile: {
+      firstName: req.body.profile.firstName,
+      lastName: req.body.profile.lastName,
+      identifier: req.body.profile.identifier,
+      photo:req.body.profile.photo,
+      birthdate: req.body.profile.birthdate,
+      mobile: req.body.profile.mobile,
+    },
+    password: req.body.password,
+    passwordConfirm: req.body.passwordConfirm,
+    verified: false,
+  });
   
-    let responseData;
-    if (user.name && user.contactPerson.firstName && user.contactPerson.lastName) {
-      // Agency registration
-      responseData = {
-        agency: user,
-      };
-    } else {
-      // User registration
-      responseData = {
-        user,
-      };
-    }
-  
-    res.status(statusCode).json({
-      status: 'success',
-      token,
-      data: responseData,
-    });
-  };
+  const verificationToken = newUser.createVerificationToken();
+  await newUser.save({validateBeforeSave : false}) 
+  await Email.sendVerificationEmail(req.body.email, verificationToken);
+  // Create and send the token
+  createSendToken(newUser, 201, res);
+});
 
 
-  exports.registerUser =  catchAsync(async(req, res, next) =>{
-    if (await User.findOne({ userName: req.body.userName }) || await User.findOne({email: req.body.email})) {
-        return next(new AppError('user already exists', 400));
-    }
-    const newUser = await User.create({
-        userName: req.body.userName,
-        email:req.body.email, 
-        profile:{
-        firstName: req.body.profile.firstName,
-        lastName:req.body.profile.lastName,
-        identifier:req.body.profile.identifier,
-        birthdate: req.body.profile.birthdate},
-        password:req.body.password,
-        passwordConfirm:req.body.passwordConfirm,
-        passwordChangedAt :req.body.passwordChangedAt
-    })
-    createSendToken(newUser,201,res)
-})
+
+ exports.verifyUser = catchAsync(async (req, res, next) => {
+
+  const hashedToken = crypto.createHash('sha256').update(req.params.token).digest('hex');
+  // Find the user by the verification token and check expiry (if set)
+  const user = await User.findOne({
+    verificationToken: hashedToken,
+    verificationTokenExpires: { $gt: Date.now() }, // Optional check
+  });
+  if (!user) {
+    return next(new AppError('Invalid or expired verification token', 400));
+  }
+
+  user.verified = true;
+  user.verificationToken = undefined;
+  user.verificationTokenExpires = undefined; // Clear verification token
+  await user.save({validateBeforeSave : false});
+
+ res.status(200).json({
+  status:'success',
+  message: 'User verified successfully',
+ })
+});
+
+exports.resendVerificationToken = catchAsync(async (req, res, next) => {
+  const user = await User.findOne({ email: req.body.email });
+
+  if (!user) {
+    return next(new AppError('User not found', 404));
+  }
+
+  // Check if the user is already verified
+  if (!user.verificationToken && !user.verificationTokenExpires) {
+    return next(new AppError('User is already verified', 400));
+  }
+
+  const verificationToken = user.createVerificationToken();
+  await user.save({validateBeforeSave : false}) 
+  await Email.sendVerificationEmail(user.email, verificationToken);
+
+  res.status(200).json({
+    status: 'success',
+    message: 'Verification token sent again successfully',
+  });
+});
+
 exports.registerAgency = catchAsync(async (req, res, next) => {
   if (await Agency.findOne({ email: req.body.email })) {
     return next(new AppError('Agency already exists', 400));
@@ -81,12 +138,16 @@ exports.registerAgency = catchAsync(async (req, res, next) => {
     passwordConfirm: req.body.passwordConfirm,
     photo: req.body.photo,
     location: req.body.location,
+    tourist_commercial: req.body.tourist_commercial,
+    cotoNumber: req.body.cotoNumber,
+    phoneNumber: req.body.phoneNumber,
+    agencyMobile:req.body.agencyMobile,
     contactPerson: {
       firstName: req.body.contactPerson.firstName,
       lastName: req.body.contactPerson.lastName,
       email: req.body.contactPerson.email,
       ownersId: req.body.contactPerson.ownersId,
-      phoneNumber: req.body.contactPerson.phoneNumber,
+      birthDate: req.body.contactPerson.birthDate,
       mobile: req.body.contactPerson.mobile,
     },
   });
@@ -94,7 +155,8 @@ exports.registerAgency = catchAsync(async (req, res, next) => {
   // Create a new AgencyRequest document
   const agencyRequest = await AgencyRequest.create({
     agencyId: newAgency._id,
-    lissenceCopy: req.body.lissenceCopy,
+    tourist_commercial : newAgency.tourist_commercial,
+    lissenceCopy: newAgency.cotoNumber,
   });
 
   // Send the response after creating both documents
@@ -236,7 +298,7 @@ exports.forgotPassword = catchAsync(async (req, res, next) => {
   const resetURL = `${req.protocol}://${req.get('host')}/auth/resetPassword/${resetToken}`;
 
   try {
-    await sendPasswordResetEmail( resetDocument.email, resetURL);
+    await Email.sendPasswordResetEmail(resetDocument.email, resetURL);
 
     res.status(200).json({
       status: 'success',
@@ -247,7 +309,8 @@ exports.forgotPassword = catchAsync(async (req, res, next) => {
     resetDocument.passwordResetExpires = undefined;
     await resetDocument.save({ validateBeforeSave: false });
 
-    return next(new AppError('There was an error sending the email. Please try again later!', 500));
+    console.error('Error sending password reset email:', err);
+    return next(new AppError('There was an error sending the email. Please try again later.', 500));
   }
 });
 exports.resetPassword = catchAsync(async (req, res, next) => {
@@ -275,9 +338,7 @@ exports.resetPassword = catchAsync(async (req, res, next) => {
     resetDocument.passwordResetToken = undefined;
     resetDocument.passwordResetExpires = undefined;
     await resetDocument.save({ validateBeforeSave: false });
-  
-    // 3. Update the changedPassordAt property for the user/agency
-  
+    
     // 4. Log the user/agency in and send JWT
     createSendToken(resetDocument, 200, res);
   });

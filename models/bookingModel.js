@@ -5,6 +5,27 @@ const bookingSchema = new mongoose.Schema({
     ref:'User',
     required:[true,'A booking must belong to a user']
  },
+ bookingType:{
+    type: String,
+    required: true,
+    enum:['trip','car','scholarship','flight'],
+ }, 
+ trip:{
+   type: mongoose.Schema.ObjectId,
+    ref:'Trip',
+    },
+ car:{
+    type: mongoose.Schema.ObjectId,
+    ref:'Car', 
+ },
+ flight:{
+    type: mongoose.Schema.ObjectId,
+    ref:'Flight',
+ },
+ scholarship:{
+    type: mongoose.Schema.ObjectId,
+    ref:'Scholarship',
+ },
  service:{
     type: mongoose.Schema.ObjectId,
     ref:'AgencyService',

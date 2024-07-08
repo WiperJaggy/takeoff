@@ -9,6 +9,8 @@ const userSchema = new mongoose.Schema({
         required: [true, 'Please provide username'],
         minlength: 3,
         maxlength: 50,
+        match: [/^[a-zA-Z0-9._-]+$/, 'Username can only contain letters, numbers, periods, hyphens, and underscores.'],
+        trim: true
     },
     email: {
         type: String,
@@ -23,6 +25,12 @@ const userSchema = new mongoose.Schema({
         type: String,
         required: [true, 'Please provide password'],
         minlength: 6,
+        validate: {
+            validator: function(value) {
+                return !value.includes(' ');
+            },
+            message: 'Password must not contain any spaces.'
+        }
     },
     passwordConfirm:{
         type:String,
@@ -52,12 +60,38 @@ const userSchema = new mongoose.Schema({
     photo: String,
     birthdate: {
         type: Date,
-        required: [true,"please provide your Age."]
+        required: [true, 'Please provide your birthdate'],
+        validate: {
+            validator: function(value) {
+                const today = new Date();
+                const eighteenYearsAgo = new Date(today.getFullYear() - 18, today.getMonth(), today.getDate());
+                return value <= eighteenYearsAgo && value <= today;
+            },
+            message: 'Birthdate must be a valid date and the user must be at least 18 years old.'
+        }
     },
-    identifier :{
-        type: Number,
-        required: [true,"please provide your identifier."]
-    }
+    identifier: {
+        type: String,
+        unique: [true, 'This identifier is already in use.'],
+        required: [true, 'Please provide your identifier.'],
+        validate: {
+            validator: function(value) {
+                return /^\d{11}$/.test(value);
+            },
+            message: 'Identifier must be 11 digits long.'
+        }
+    },
+    mobile:{
+        type:String,
+        required:[true,"A User must have a Mobile Number"],
+        validate: {
+            validator: (value) => {
+              // Check if the value is a 10-digit number starting with '09' and contains no symbols, letters, or spaces
+              return /^09\d{8}$/.test(value.trim());
+            },
+            message: 'Mobile number must be a 10-digit number starting with "09" and cannot contain any symbols, letters, or spaces.',
+          },
+    } 
 
 } ,  
     createdAt: { type: Date,
@@ -66,10 +100,18 @@ const userSchema = new mongoose.Schema({
     updatedAt: {
         type: Date,
     },
-  
+    verified:{
+        type:Boolean,
+        default:false
+    },
+    verificationToken:{
+        type:String,
+        select : false
+    },
     passwordChangedAt: Date,
     passwordResetToken: String,
     passwordResetExpires:Date,
+    verificationTokenExpires:Date
 });
 
 
@@ -120,10 +162,13 @@ userSchema.methods.createPasswordResetToken = function(){
     return resetToken;
 }
 
-
-
-
-
+userSchema.methods.createVerificationToken = function(){
+    const verification = crypto.randomBytes(32).toString('hex');
+    this.verificationToken = crypto.createHash('sha256').update(verification).digest('hex');
+    console.log({verification},this.verificationToken);
+    this.verificationTokenExpires = Date.now()+ 24 * 60 * 60 * 1000;
+    return verification;
+}
 
 const User = mongoose.model('User',userSchema);
 module.exports = User;

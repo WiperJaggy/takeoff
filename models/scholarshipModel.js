@@ -57,7 +57,7 @@ const scholarshipSchema = new mongoose.Schema({
         type: [String],
         required: true
     },
-    prcie:{
+    price:{
         type: Number,
         required: true
     },

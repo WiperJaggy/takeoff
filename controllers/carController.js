@@ -67,12 +67,12 @@ exports.updateCar = catchAsync(async(req,res,next)=>{
     const existingCar = await Car.findById(id).populate('agencyId');
   
     if (!existingCar) {
-      return res.status(404).json({ message: 'Trip not found' });
+      return res.status(404).json({ message: 'Car not found' });
     }
   
     // Check if the agency is the same
     if (existingCar.agencyId._id.toString() !== agencyId.toString()) {
-      return res.status(403).json({ message: 'You are not authorized to update this trip' });
+      return res.status(403).json({ message: 'You are not authorized to update this Car' });
     }
 
    const updatedCar = await Car.findByIdAndUpdate(
@@ -91,12 +91,12 @@ exports.deleteCar= catchAsync(async (req, res, next) => {
   
     // Check if the review exists
     if (!existingCar) {
-      return next(new AppError('No Trips found with that ID', 404));
+      return next(new AppError('No Cars found with that ID', 404));
     }
   
     // Check if the logged-in user is the owner of the review
     if (existingCar.agencyId.toString() !== req.agency.id) {
-      return next(new AppError('You are not authorized to delete this review', 403));
+      return next(new AppError('You are not authorized to delete this Car', 403));
     }
     // Delete the review
     await Car.findByIdAndDelete(req.params.id);

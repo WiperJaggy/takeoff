@@ -12,6 +12,10 @@ const agencyRequestSchema = new mongoose.Schema({
         default: 'pending'
     },
     adminResponse : String,
+    tourist_commercial :{
+      type: String,
+      required: [true,'please provide the commercial situation']
+    },
     lissenceCopy:{
         type: String,
         required: [true,'please provide lisence copy']

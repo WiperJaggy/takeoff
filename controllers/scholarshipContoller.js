@@ -6,7 +6,7 @@ const AgencyService = require('./../models/agencyServiceModel');
 
 exports.createScholarship = catchAsync(async (req, res, next) => {
     // Extract the necessary data from the request body
-  const {applicationName,applicationType,donor,description,applicationOpening,seats,applicationDeadline,applicationLink,eligibility,benefits,requiredDocuments,serviceType}= req.body;
+  const {applicationName,applicationType,donor,description,applicationOpening,seats,applicationDeadline,applicationLink,eligibility,benefits,requiredDocuments,price,priceDiscount,serviceType}= req.body;
     // Get the agencyId from the authenticated user
     const { agencyId } = req;
   
@@ -35,6 +35,8 @@ exports.createScholarship = catchAsync(async (req, res, next) => {
         eligibility,
         benefits,
         requiredDocuments,
+        price,
+        priceDiscount,
         agencyId,  
     });
   
@@ -59,7 +61,7 @@ exports.createScholarship = catchAsync(async (req, res, next) => {
         { path:'serviceType',  strictPopulate: false, select:'serviceType' }
     ])
     if(!scholarship){
-        return next(new AppError('Car not found', 404))
+        return next(new AppError('scholarship not found', 404))
     }
     res.status(200).json({
         status:'success',
@@ -77,12 +79,12 @@ exports.createScholarship = catchAsync(async (req, res, next) => {
       const existingScholarship = await Scholarship.findById(id).populate('agencyId');
     
       if (!existingScholarship) {
-        return res.status(404).json({ message: 'Trip not found' });
+        return res.status(404).json({ message: 'scholarship not found' });
       }
     
       // Check if the agency is the same
       if (existingScholarship.agencyId._id.toString() !== agencyId.toString()) {
-        return res.status(403).json({ message: 'You are not authorized to update this trip' });
+        return res.status(403).json({ message: 'You are not authorized to update this scholarship' });
       }
   
       const updatedScholarship = await Scholarship.findByIdAndUpdate(
@@ -114,12 +116,12 @@ exports.createScholarship = catchAsync(async (req, res, next) => {
   
     // Check if the review exists
     if (!existingScholarship) {
-      return next(new AppError('No Trips found with that ID', 404));
+      return next(new AppError('No scholarships found with that ID', 404));
     }
   
     // Check if the logged-in user is the owner of the review
     if (existingScholarship.agencyId.toString() !== req.agency.id) {
-      return next(new AppError('You are not authorized to delete this review', 403));
+      return next(new AppError('You are not authorized to delete this scholarship', 403));
     }
     // Delete the review
     await Scholarship.findByIdAndDelete(req.params.id);
