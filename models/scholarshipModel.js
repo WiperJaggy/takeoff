@@ -57,6 +57,16 @@ const scholarshipSchema = new mongoose.Schema({
         type: [String],
         required: true
     },
+    prcie:{
+        type: Number,
+        required: true
+    },
+    priceDiscount:{
+        type: Number,
+        min: 0,
+        max: 100,
+        default:0
+    },
     createdAt:{
         type: Date,
         default: Date.now()
