@@ -22,12 +22,12 @@ exports.getCheckoutSession = catchAsync(async (req, res, next) => {
   if (!booking.serviceId || !booking.user) {
     return next(new Error('Missing service or user information in the booking'));
   }
-if(booking.status === 'cancelled' || 'returned' || 'confirmed'){
-  return next(new Error('Booking is cancelled or returned'))
-}
-else if(booking.status === 'confirmed'){
-  return next(new Error('Booking is already confirmed'))
-}
+  console.log(booking.status)
+  if (booking.status === 'cancelled' || booking.status === 'returned') {
+    return next(new Error('Booking is cancelled or returned'))
+  } else if (booking.status === 'confirmed') {
+    return next(new Error('Booking is already confirmed'))
+  }
   // Create a Stripe Checkout session
   const session = await stripe.checkout.sessions.create({
     payment_method_types: ['card'],

@@ -366,6 +366,9 @@ res.status(201).json({
       return res.status(403).json({ message: 'You are not authorized to perform this action' });
 
   }
+  if(booking.status === 'cancelled' || booking.status === 'confirmed'){
+    return res.status(403).json({ message: 'Cannot cancel a cancelled or confirmed booking' });
+  }
   if (booking.status === 'pending payment'){
     booking.status = 'cancelled';
     await booking.save();
