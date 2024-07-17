@@ -19,9 +19,7 @@ const carSchema = new mongoose.Schema({
         required:[true, 'Please provide a car number'],
         unique: true
     },
-    carPhoto:{
-        type:String,
-    },
+    carPhotos: [{ type: String, maxLength: 255 }],
     carColor:{
         type:String,
         required:[true, 'Please provide a car color']

@@ -17,6 +17,7 @@
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
     "express-async-errors": "^3.1.1",
+    "firebase-admin": "^12.2.0",
     "form-data": "^4.0.0",
     "jsonwebtoken": "^9.0.2",
     "mailgun.js": "^10.2.1",
@@ -27,6 +28,7 @@
     "request-ip": "^3.3.0",
     "sharp": "^0.33.4",
     "stripe": "^15.12.0",
+    "uuid": "^10.0.0",
     "validator": "^13.12.0"
   },
   "devDependencies": {

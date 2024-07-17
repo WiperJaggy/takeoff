@@ -25,7 +25,6 @@ const carRouter = require('./routes/carRoutes');
 const flightRouter = require('./routes/filghtRoutes');
 const scholarshipRouter = require('./routes/scholarshipRoutes');
 const userRouter = require('./routes/userRoutes');
-const carBookingRouter = require('./routes/carBookingRoutes');
 // middleware
 const trackingMiddleware = require('./middleware/trackingMiddleware')
 
@@ -53,7 +52,6 @@ app.use('/cars',carRouter);
 app.use('/flights',flightRouter);
 app.use('/scholarships',scholarshipRouter);
 app.use('/users',userRouter);
-app.use('/carBookings',carBookingRouter);
 console.log(process.env.NODE_ENV)
 app.use((req, res, next) => {
     res.status(404).send('Page not found');

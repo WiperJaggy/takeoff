@@ -3,14 +3,13 @@ const catchAsync = require('./../utils/catchAsync')
 const AppError = require('./../utils/appError');
 const Service = require('./../models/serviceModel');
 const AgencyService = require('./../models/agencyServiceModel');
+const uploadImages = require('./../utils/uploadFiles')
 
 exports.createCar = catchAsync(async (req, res, next) => {
     // Extract the necessary data from the request body
-    const {carName,carModel,carNumber,carPhoto,carColor,seats,startLocation,availability,price,priceDiscount,serviceType } = req.body;
-  
+    const {carName,carModel,carNumber,carPhotos,carColor,seats,startLocation,availability,price,priceDiscount,serviceType } = req.body;
     // Get the agencyId from the authenticated user
-    const { agencyId } = req;
-  
+    const { agencyId } = req;  
     // Find the service type in the Service model
     const service = await Service.findOne({ serviceType });
     if (!service) {
@@ -26,7 +25,7 @@ exports.createCar = catchAsync(async (req, res, next) => {
   
     // Create the new trip
     const car = await Car.create({
-        carName,carModel,carNumber,carPhoto,carColor,agencyId,seats,startLocation,availability,price,priceDiscount
+        carName,carModel,carNumber,carPhotos,carColor,agencyId,seats,startLocation,availability,price,priceDiscount
     });
   
     // Populate the agency name and service type in the response
@@ -42,6 +41,34 @@ exports.createCar = catchAsync(async (req, res, next) => {
       }
     });
   });
+
+  exports.uploadCarPhotos =catchAsync( async(req, res,next) =>{
+    const { carId } = req.params;
+  const photoUrls = [];
+
+  if (req.files.length > 4) {
+    return res.status(400).json({ message: 'Maximum of 4 photos can be uploaded.' });
+  }
+
+  for (const file of req.files) {
+    try {
+      const photoUrl = await uploadImages(file);
+      if (photoUrl !== 'No file uploaded.' && photoUrl !== 'The uploaded file is not an image.') {
+        photoUrls.push(photoUrl);
+      }
+    } catch (err) {
+      console.error('Error uploading photo:', err);
+    }
+  }
+
+  // Save the photo URLs to the database
+  await Car.updateOne(
+    { _id: carId },
+    { $set: { carPhotos: photoUrls } }
+  );
+
+  res.status(200).json({ message: 'Car photos uploaded successfully', photoUrls });
+  })
 
 exports.getCar = catchAsync(async(req,res,next)=>{
     const { id } = req.params;

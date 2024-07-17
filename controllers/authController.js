@@ -63,7 +63,6 @@ exports.registerUser = catchAsync(async (req, res, next) => {
       firstName: req.body.profile.firstName,
       lastName: req.body.profile.lastName,
       identifier: req.body.profile.identifier,
-      photo:req.body.profile.photo,
       birthdate: req.body.profile.birthdate,
       mobile: req.body.profile.mobile,
     },
