@@ -6,8 +6,8 @@ const nodemailer = require('nodemailer');
   port: process.env.EMAIL_PORT,
   service: 'hotmail',
   auth: {
-    user: 'tracks47@hotmail.com',
-    pass: 'getr#rit-nephipow9Lc'
+    user: process.env.EMAIL,
+    pass: process.env.PASSWORD
   }
  });
  
@@ -54,13 +54,13 @@ exports.sendPasswordResetEmail = async (email, resetURL) => {
     port: process.env.EMAIL_PORT,
     service: 'hotmail',
     auth: {
-      user: 'tracks47@hotmail.com',
-      pass: 'getr#rit-nephipow9Lc'
+      user: process.env.EMAIL,
+      pass: process.env.PASSWORD
     }
   });
 
   const mailOptions = {
-    from: 'tracks47@hotmail.com',
+    from: process.env.EMAIL,
     to: email,
     subject: 'Password Reset',
     html: `
