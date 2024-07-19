@@ -60,18 +60,3 @@ exports.updateRequestStatus = catchAsync(async (req, res, next) => {
   }
 });
 
-
-// exports.getWeeklyReport = catchAsync(async(req,res,next)=>{
-//   const agencyId  = req.params;
-//   const report = await Booking.findById({agencyId}).populate([
-//     { path: 'agencyId', select: 'name' },
-//     { path:'service',  strictPopulate: false, select:'serviceType' }
-// ])
-
-//   res.status(200).json({
-//     status:'success',
-//     data:{
-//       report
-//     }
-//   })
-// })

@@ -5,27 +5,18 @@ const Service = require('./../models/serviceModel');
 const agencyServiceSchema = new mongoose.Schema({
 
 agencyId:{
-    type: mongoose.Schema.ObjectId,
+    type: mongoose.Types.ObjectId,
     ref: 'Agency',
     required: true
 },
 serviceId:{
-    type: mongoose.Schema.ObjectId,
+    type: mongoose.Types.ObjectId,
     ref: 'Service',
     required: true
 },
 description:{
 type:String,
 },
-discountPercentage: {
-    type: Number,
-    min: 0,
-    max: 100,
-    default: 0
-  },
-  price: {
-    type: Number,
-  },
 licenseExpiryDate:{
     type: Date,
     required: true,
@@ -47,9 +38,6 @@ updatedAt:{
   toObject: { virtuals: true }
 })
 
-agencyServiceSchema.virtual('priceAfterDiscount').get(function() {
-  return this.price * (1 - (this.discountPercentage / 100));
-});
 agencyServiceSchema.pre(/^find/, function(next) {
   this.populate('agencyId','name');
   next();

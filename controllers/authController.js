@@ -135,7 +135,6 @@ exports.registerAgency = catchAsync(async (req, res, next) => {
     email: req.body.email,
     password: req.body.password,
     passwordConfirm: req.body.passwordConfirm,
-    photo: req.body.photo,
     location: req.body.location,
     tourist_commercial: req.body.tourist_commercial,
     cotoNumber: req.body.cotoNumber,

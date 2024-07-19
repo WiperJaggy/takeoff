@@ -87,24 +87,18 @@ const tripSchema = new mongoose.Schema({
     },
     updatedAt:{
         type: Date
-    }
-    // ratingsAverage:{
-    //     type:Number,
-    //     default:4.5,
-    //     min:[1,"the minimum rating is 1"],
-    //     max:[5,"the maximum rating is 5"],
-    //     set: val => Math.round(val*10)/10
-    // },
-    // ratingsQuantity:{
-    //     type:Number,
-    //     default:0
-    // },
-    //  rating:{
-    //     type: Number,
-    //     default :4.5,
-    //     min:[1,'the minimum rating is 1'],
-    //     max:[5,'the maximum rating is 5']
-    // },
+    },
+    ratingsAverage:{
+        type:Number,
+        default:4.5,
+        min:[1,"the minimum rating is 1"],
+        max:[5,"the maximum rating is 5"],
+        set: val => Math.round(val*10)/10
+    },
+    ratingCount:{
+        type:Number,
+        default:0
+    },
 },
 {
     toJSON:{virtuals:true},

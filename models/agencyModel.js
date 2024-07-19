@@ -68,7 +68,7 @@ const agencySchema = new mongoose.Schema({
           message: 'Commercial number must be a 5-digit number and cannot contain any symbols, letters, or spaces.',
         },
       },
-      photo:String,
+      photo: String,
     contactPerson:{
         firstName:{
             type: String,
@@ -173,6 +173,17 @@ const agencySchema = new mongoose.Schema({
     updatedAt: {
         type: Date,
     },
+    ratingsAverage:{
+        type:Number,
+        default:4.5,
+        min:[1,"the minimum rating is 1"],
+        max:[5,"the maximum rating is 5"],
+        set: val => Math.round(val*10)/10
+    },
+    ratingCount:{
+        type:Number,
+        default:0
+    },
 createdAt:{type: Date,
     default: Date.now()
 },
@@ -224,10 +235,15 @@ agencySchema.methods.createPasswordResetToken = function(){
     this.passwordResetExpires = Date.now()+10*60*1000;
     return resetToken;
 }
-
-
-
-
+agencySchema.pre('save', function(next) {
+    // Only run password validation if the password or passwordConfirm fields are modified
+    if (!this.isModified('password') && !this.isModified('passwordConfirm')) {
+      return next();
+    }
+  
+    // Run the password-related validation
+    this.validate(['password', 'passwordConfirm'], next);
+  });
 const Agency = mongoose.model('Agency', agencySchema);
 
 module.exports = Agency;

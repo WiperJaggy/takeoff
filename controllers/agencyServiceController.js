@@ -3,11 +3,12 @@ const catchAsync = require('../utils/catchAsync');
 const AppError = require('./../utils/appError');
 const AgencyService = require('./../models/agencyServiceModel');
 const AgencyRequest = require('../models/agencyRequestModel');
+const mongoose = require('mongoose')
 
 exports.createService = catchAsync(async (req, res, next) => {
   const agencyId = req.agency.id;
   const agencyRequest = req.query.agencyRequest;
-  const { serviceType, description,price,discountPercentage } = req.body;
+  const { serviceType, description } = req.body;
   
   // Check if the service already exists in the Service collection
   let request = await AgencyRequest.findById(agencyRequest);
@@ -44,9 +45,7 @@ exports.createService = catchAsync(async (req, res, next) => {
     agencyId,
     serviceId: service._id,
     licenseExpiryDate,
-    description,
-    price,
-    discountPercentage
+    description
   });
 
   res.status(201).json({ service , agencyService: newAgencyService });
@@ -78,18 +77,6 @@ exports.updateService = catchAsync(async (req, res, next) => {
     updatedFields.available = req.body.available;
   }
 
-  // Check if the price is provided in the request body
-  if (req.body.price) {
-    updatedFields.price = req.body.price;
-    updatedFields.priceAfterDiscount = req.body.price * (1 - (agenService.discountPercentage / 100));
-  }
-
-  // Check if the discount percentage is provided in the request body
-  if (req.body.discountPercentage) {
-    updatedFields.discountPercentage = req.body.discountPercentage;
-    updatedFields.priceAfterDiscount = agenService.basePrice * (1 - (req.body.discountPercentage / 100));
-  }
-
   // Update the agencyService
   const updatedAgencyService = await AgencyService.findByIdAndUpdate(
     req.params.id,
@@ -108,17 +95,6 @@ exports.updateService = catchAsync(async (req, res, next) => {
   });
 });
 
-  exports.getAllAgencyServices=catchAsync(async(req,res,next)=>{
-    const agencyServices = await AgencyService.find();
-    res.status(200).json({
-      status:'success',
-      results: agencyServices.length,
-      data:{
-        agencyServices
-      }
-    })
-
-  })
 
   exports.getAgencyServices = catchAsync(async (req, res, next) => {
     // Find all the agencyServices for the logged-in agency
@@ -155,6 +131,23 @@ exports.updateService = catchAsync(async (req, res, next) => {
     data: null
   });
   })
+
+  
+
+  exports.getMyService = catchAsync(async(req,res,next)=>{
+    const agencyService = await AgencyService.findById(req.params.id);
+    if (agencyService.agencyId._id.toString() !== req.agency.id) {
+      return next(new AppError('You are not authorized to get this agencyService', 403));
+    }
+    res.status(200).json({
+      status:'success',
+      data:{
+        agencyService
+      }
+    })
+  })
+
+
   exports.getAgencyService = catchAsync(async (req, res, next) => {
     // Find the agencyService by its ID
     const agencyService = await AgencyService.findById(req.params.id);
@@ -172,15 +165,14 @@ exports.updateService = catchAsync(async (req, res, next) => {
     });
   });
 
-  exports.getMyService = catchAsync(async(req,res,next)=>{
-    const agencyService = await AgencyService.findById(req.params.id);
-    if (agencyService.agencyId._id.toString() !== req.agency.id) {
-      return next(new AppError('You are not authorized to get this agencyService', 403));
-    }
+  exports.getAllAgencyServices=catchAsync(async(req,res,next)=>{
+    const agencyServices = await AgencyService.find();
     res.status(200).json({
-      status:'success',
+      status:'success', 
+      results: agencyServices.length,
       data:{
-        agencyService
+        agencyServices
       }
     })
+
   })

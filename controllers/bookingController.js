@@ -254,6 +254,11 @@ exports.createBooking = catchAsync(async(req,res,next)=>{
         break;
     case 'flight':
         service = await Flight.findById(serviceId);
+
+
+
+
+
         break;
     case 'trip':
         service = await Trip.findById(serviceId);
@@ -296,17 +301,45 @@ res.status(201).json({
   booking
 })
 })
-  exports.getUserBookings = async (req, res, next) => {
-    const bookings = await Booking.find({ user: req.user.id }).populate('service');
+exports.getUserBookings = catchAsync(async (req, res, next) => {
+  const {userId} = req.body
+  const bookings = await Booking.find({ user:userId});
+
+  // Check if the current user is the same as the user who booked the car
+  if (bookings.some(booking => booking.user.toString() !== req.user.id)) {
+    return next(new AppError('You are not authorized to return this booking', 403));
+  }
+
+  res.status(200).json({
+    status: 'success',
+    results: bookings.length,
+    data: {
+      bookings
+    }
+  });
+});
+exports.getUserBooking = catchAsync(async (req, res, next) => {
+  const { userId, bookingId } = req.body;
+
+  try {
+    // Find the booking by ID and user
+    const booking = await Booking.findOne({ _id: bookingId, user: userId });
+
+    // Check if the booking exists and if the current user is the owner
+    if (!booking || booking.user.toString() !== req.user.id) {
+      return next(new AppError('Booking not found or you are not authorized to view this booking', 404));
+    }
+
     res.status(200).json({
       status: 'success',
-      results: bookings.length,
       data: {
-        bookings
+        booking
       }
     });
-  };
-
+  } catch (err) {
+    next(err);
+  }
+});
 
   exports.uploadScholarshipDocuments = catchAsync(async (req, res, next) => {
     const { bookingId } = req.params;
@@ -376,3 +409,4 @@ res.status(201).json({
   }
 
 })
+

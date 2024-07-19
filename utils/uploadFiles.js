@@ -6,7 +6,8 @@ const sharp = require('sharp');
 const User = require('./../models/userModel')
 const app = express();
 
-const uploadImage = async (req) => {
+const uploadImage = async (file) => {
+  console.log('File:', file);
   try {
     if (!req.file) {
       return 'No file uploaded.';
@@ -16,11 +17,11 @@ const uploadImage = async (req) => {
     if (!req.file.mimetype.startsWith('image/')) {
       return 'The uploaded file is not an image.';
     }
-  // Resize the image
-  const resizedBuffer = await sharp(req.file.buffer)
-  .resize(300, 300) // Resize the image to 800x600 pixels
-  .jpeg({ quality: 80 }) // Compress the image to 80% quality
-  .toBuffer();
+    // Resize the image
+    const resizedBuffer = await sharp(req.file.buffer)
+      .resize(300, 300)
+      .jpeg({ quality: 80 })
+      .toBuffer();
 
     const filename = `${uuidv4()}-${req.file.originalname}`;
     const blob = bucket.file(filename);

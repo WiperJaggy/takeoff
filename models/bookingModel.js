@@ -72,7 +72,7 @@ const { Schema } = mongoose;
 const bookingSchema = new mongoose.Schema({
 
   user:{
-        type: mongoose.Schema.ObjectId,
+        type: Schema.Types.ObjectId,
         ref:'User',
         required:[true,'A booking must belong to a user']
      },

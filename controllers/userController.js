@@ -3,6 +3,9 @@ const catchAsync = require("./../utils/catchAsync");
 const AppError = require('./../utils/appError');
 const multer = require('multer');
 const sharp = require('sharp');
+const Trip = require('./../models/tripModel')
+const Flight = require('../models/flightModel');
+const Scholarship = require('../models/scholarshipModel');
 const Car = require('./../models/carModel');
 const Booking = require('../models/bookingModel');
 const Payment = require('../models/paymentModel');
@@ -153,8 +156,9 @@ exports.returnCar = catchAsync(async (req, res, next) => {
 
 
 exports.uploadPhoto = catchAsync(async (req, res, next) => {
+  console.log(req)
   try {
-    const publicUrl = await uploadImage(req);
+    const publicUrl = await uploadImage(req.file);
     // Store the public URL in the database
     const user = await User.findById(req.user.id);
     user.profile.photo = publicUrl;
@@ -163,5 +167,40 @@ exports.uploadPhoto = catchAsync(async (req, res, next) => {
     res.status(200).send({ fileUrl: publicUrl });
   } catch (error) {
     next(error);
+  }
+});
+
+
+exports.getAgencyServices = catchAsync(async (req, res, next) => {
+  const { agencyId } = req.body;
+
+  try {
+    // Retrieve cars associated with the agency
+    const cars = await Car.find({ agencyId: agencyId });
+
+    // Retrieve trips associated with the agency
+    const trips = await Trip.find({ agencyId: agencyId });
+
+    // Retrieve scholarships associated with the agency
+    const scholarships = await Scholarship.find({ agencyId: agencyId });
+
+    // Retrieve flights associated with the agency
+    const flights = await Flight.find({ agencyId: agencyId });
+
+    const services = {
+      cars,
+      trips,
+      scholarships,
+      flights
+    };
+
+    res.status(200).json({
+      status: 'success',
+      data: {
+        services
+      }
+    });
+  } catch (err) {
+    next(err);
   }
 });

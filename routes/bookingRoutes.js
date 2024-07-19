@@ -9,5 +9,6 @@ router.use(authController.protect)
 router.route('/create-a-booking/:serviceType/').post( bookingController.createBooking)
 router.patch('/upload-documents/:bookingId', upload.array('files',5), bookingController.uploadScholarshipDocuments)
 router.get('/get-all-my-bookings',bookingController.getUserBookings)
+router.get('/get-my-booking',bookingController.getUserBooking)
 router.get('/cancel-booking',bookingController.cancelBooking)
 module.exports = router;

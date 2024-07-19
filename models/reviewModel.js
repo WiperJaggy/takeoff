@@ -7,18 +7,14 @@ rating :{
   max:5
 },
 trip:{
-    type: mongoose.Schema.ObjectId,
+    type: mongoose.Schema.Types.ObjectId,
     ref: 'Trip'
 },
 user:{
     type: mongoose.Schema.ObjectId,
     ref: 'User',
     required : [true, "A review must belong to a user"]
-},
-service:{
-    type: mongoose.Schema.ObjectId,
-    ref: 'Service'
-},
+},  
 agency:{
     type: mongoose.Schema.ObjectId,
     ref: 'Agency'
@@ -48,7 +44,7 @@ reviewSchema.pre(/^find/,function (next){
     next();
 })
 
-reviewSchema.index({ user: 1, trip: 1, agency: 1, service: 1 }, { unique: true });
+reviewSchema.index({ user: 1, trip: 1, agency: 1}, { unique: true });
 
 const Review = mongoose.model('Review', reviewSchema);
 module.exports = Review

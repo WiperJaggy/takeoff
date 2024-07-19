@@ -5,7 +5,7 @@ const upload = require('../config/multer');
 
 const router = express.Router();
 
-
+router.get('/get-serivces',userController.getAgencyServices);
 
 router.use(authController.protect)
 router.patch('/updateMe' , userController.updateMe);
