@@ -11,4 +11,5 @@ router.patch('/upload-documents/:bookingId', upload.array('files',5), bookingCon
 router.get('/get-all-my-bookings',bookingController.getUserBookings)
 router.get('/get-my-booking',bookingController.getUserBooking)
 router.get('/cancel-booking',bookingController.cancelBooking)
+router.post('/uploadPassportPhotos/:bookingId', upload.array('photos'), bookingController.uploadPassportPhotos);
 module.exports = router;

@@ -36,15 +36,10 @@ exports.createService = catchAsync(async (req, res, next) => {
     );
   }
 
-  // Calculate the license expiry date
-  const licenseExpiryDate = new Date();
-  licenseExpiryDate.setFullYear(licenseExpiryDate.getFullYear() + 1);
-
   // Create a new agencyServices document
   const newAgencyService = await AgencyService.create({
     agencyId,
     serviceId: service._id,
-    licenseExpiryDate,
     description
   });
 

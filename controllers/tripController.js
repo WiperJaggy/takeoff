@@ -37,7 +37,7 @@ exports.createTrip = catchAsync(async (req, res, next) => {
     availability,
     priceDiscount,
     agencyId,
-    availableSeats,
+    availableSeats:maxGroupSize,
     maxGroupSize
   });
 

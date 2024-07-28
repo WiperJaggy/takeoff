@@ -60,3 +60,36 @@ exports.updateRequestStatus = catchAsync(async (req, res, next) => {
   }
 });
 
+exports.enableAgency = catchAsync(async (req, res, next) => {
+  const { agencyId } = req.body;
+
+  try {
+    const agency = await Agency.findByIdAndUpdate(agencyId, { status: 'enabled' }, { new: true });
+
+    if (!agency) {
+      return res.status(404).json({ msg: 'Agency not found' });
+    }
+
+    res.status(200).json({ msg: 'Agency enabled', agency });
+  } catch (error) {
+    console.error('Error enabling agency:', error);
+    return res.status(500).json({ msg: 'Error enabling agency' });
+  }
+});
+
+exports.disableAgency = catchAsync(async (req, res, next) => {
+  const { agencyId } = req.body;
+
+  try {
+    const agency = await Agency.findByIdAndUpdate(agencyId, { status: 'disabled' }, { new: true });
+
+    if (!agency) {
+      return res.status(404).json({ msg: 'Agency not found' });
+    }
+
+    res.status(200).json({ msg: 'Agency disabled', agency });
+  } catch (error) {
+    console.error('Error disabling agency:', error);
+    return res.status(500).json({ msg: 'Error disabling agency' });
+  }
+});

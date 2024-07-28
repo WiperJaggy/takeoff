@@ -16,7 +16,7 @@ const agencyRequestSchema = new mongoose.Schema({
       type: String,
       required: [true,'please provide the commercial situation']
     },
-    lissenceCopy:{
+    lisenceCopy:{
         type: String,
         required: [true,'please provide lisence copy']
     },

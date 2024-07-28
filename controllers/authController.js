@@ -154,14 +154,14 @@ exports.registerAgency = catchAsync(async (req, res, next) => {
   const agencyRequest = await AgencyRequest.create({
     agencyId: newAgency._id,
     tourist_commercial : newAgency.tourist_commercial,
-    lissenceCopy: newAgency.cotoNumber,
+    lisenceCopy: newAgency.cotoNumber,
   });
 
   // Send the response after creating both documents
   createSendToken(newAgency, 201, res);
 });
 
-       exports.loginUser = catchAsync(async (req, res, next) => {
+    exports.loginUser = catchAsync(async (req, res, next) => {
   const { emailOrUsername, password } = req.body;
 
   // 1. Check if the email/username and password exist
@@ -355,6 +355,60 @@ exports.resetPassword = catchAsync(async (req, res, next) => {
     
         createSendToken(user,200,res)
     })
+    exports.updateAgencyPassword = catchAsync(async(req,res,next)=>{
+      //1.get user from colletion
+      const agency = await Agency.findById(req.agency.id).select('+password');
+      //2.check if POSTed current password is correct
+      if(!(await agency.comparePassword(req.body.passwordCurrent, agency.password))){
+          return next(new AppError('your current password is wrong',401))
+      }
+      //3.if so, update password
+      agency.password = req.body.password;
+      agency.passwordConfirm = req.body.passwordConfirm;
+      await agency.save();
+      //4. log user in , send JWT
+  
+      createSendToken(agency,200,res)
+  })
+    exports.checkAgencyStatus = catchAsync (async(req, res, next) => {
+      const { status } = req.agency;
+    
+      if (status === 'disabled') {
+        return res.status(403).json({ msg: ' your Agency account is disabled, please contact the technical support' });
+      }
+    
+      next();
+    });
+
+ exports.checkLicenseExpiryBeforeLogin = catchAsync(async (req, res, next) => {
+  const { email } = req.body; // Assuming the login uses email to identify the agency
+
+  try {
+    const agency = await Agency.findOne({ email });
+
+    if (!agency) {
+      return res.status(404).json({ msg: 'Agency not found' });
+    }
+
+    // Check if the license has expired
+    if (new Date() > agency.licenseExpiryDate) {
+      // Update the status to disabled if the license has expired
+      agency.status = 'disabled';
+      await agency.save();
+      
+      return res.status(403).json({ msg: 'Agency license has expired and account is disabled' });
+    }
+
+    // Attach agency to request object for further use (like in the login function)
+    req.agency = agency;
+
+    next();
+  } catch (error) {
+    console.error('Error checking license expiry before login:', error);
+    return res.status(500).json({ msg: 'Error checking license expiry' });
+  }
+});
+
 // exports.adminLogin = async (req, res, next) => {
 //     try {
 //         const { username, password } = req.body;

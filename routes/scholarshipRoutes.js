@@ -8,7 +8,7 @@ router.route('/').get(scholarshipController.getAllScholarships);
 router.route('/:id').get(scholarshipController.getScholarship);
 router.use(authController.protectAgency);
 
-router.route('/').post(scholarshipController.createScholarship);
-router.route('/:id/:agencyId').patch(scholarshipController.updateScholarship);
-router.route('/:id').delete(scholarshipController.deleteScholarship);
+router.route('/').post(authController.checkAgencyStatus,scholarshipController.createScholarship);
+router.route('/:id/:agencyId').patch(authController.checkAgencyStatus,scholarshipController.updateScholarship);
+router.route('/:id').delete(authController.checkAgencyStatus,scholarshipController.deleteScholarship);
 module.exports = router;

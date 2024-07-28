@@ -11,6 +11,7 @@ const Flight = require('../models/flightModel');
 const Scholarship = require('../models/scholarshipModel');
 const multer = require('multer');
 const uploadFile =require('./../utils/uploadFiles');
+const uploadImages =require('./../utils/uploadFiles');
 // exports.createBooking = catchAsync(async (req, res, next) => {
 //   const {agencyServiceId} = req.params;
 //   const {theServiceId}=req.query;
@@ -209,15 +210,20 @@ const uploadFile =require('./../utils/uploadFiles');
 //     booking });
 // });
 exports.createBooking = catchAsync(async(req,res,next)=>{
-  const {details,} = req.body;
+  const {details} = req.body;
   const  {serviceType} = req.params;
   const serviceId = details.serviceId;
   
   console.log(serviceType, serviceId);
   let service ;
+  let agencyId;
   switch (serviceType) {
     case 'car':
         service = await Car.findById(serviceId);
+        if (!service) {
+          return res.status(404).json({ msg: 'Car not found' });
+        }
+        agencyId = service.agencyId;
         if (!details.drivingLicenseId || !/^\d{6}$/.test(details.drivingLicenseId)) {
           return res.status(400).json({ msg: 'Invalid or missing license ID for car booking' })
       }
@@ -232,39 +238,153 @@ exports.createBooking = catchAsync(async(req,res,next)=>{
       }
       const startDate = new Date(details.startDate);
       const endDate = new Date(details.endDate);
-      const now = new Date();
-        // Calculate the duration between start and end dates
-  const durationInDays = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24));
-
+       // Check if the dates are valid
+       if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+        return res.status(400).json({ msg: 'Invalid start or end date format' });
+      }
+   // Calculate the duration between start and end dates in days
+   const durationInDays = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24));
+   console.log(durationInDays);
+   const now = new Date();
   totalPrice = service.price * (1 - (service.priceDiscount / 100)) * durationInDays;
-  details.durationInDays;
       if (startDate < now || endDate < now) {
           return res.status(400).json({ msg: 'Start date or end date cannot be in the past' });
       }
       if (endDate < startDate) {
           return res.status(400).json({ msg: 'End date cannot be before start date' });
       }
-      if (!service.availability){
-        return res.status(400).json({ msg: 'Car is not available for the given date range' });
-      }else{
-    await Car.findByIdAndUpdate(details.serviceId,{
-      $set:{availability : 'false'}
-    })
-  }
+     
         break;
     case 'flight':
         service = await Flight.findById(serviceId);
+        if (!service) {
+          return res.status(404).json({ msg: 'Flight not found' });
+        }
+        agencyId = service.agencyId;
 
 
+        const peopleNumber = details.people.length;
+        if (peopleNumber > service.availableSeats) {
+          return res.status(400).json({ msg: 'Not enough available seats for the requested number of people' });
+        }
+      
+        const ids = new Set();
+        const duplicatedIdentifiers = new Set();
+      
+        for (const person of details.people) {
+          if (!/^[a-zA-Z\s]+$/.test(person.firstName)) {
+            return res.status(400).json({ msg: 'Full name must contain only letters and spaces' });
+          }
+          if (!/^[a-zA-Z\s]+$/.test(person.lastName)) {
+            return res.status(400).json({ msg: 'Full name must contain only letters and spaces' });
+          }
+          if (typeof person.age !== 'number' || person.age < 1 || person.age > 100) {
+            return res.status(400).json({ msg: 'Age must be a number between 1 and 100' });
+          }
+          if (!/^\d{11}$/.test(person.identifier)) {
+            return res.status(400).json({ msg: 'Identifier must be exactly 11 digits' });
+          }
+          if (!/^[A-Z]-\d{9}$/.test(person.passportNumber)) {
+            return res.status(400).json({ msg: 'Passport number must be a capital letter followed by a hyphen and exactly 9 digits' });
+          }
+           // Add the passportPhoto field but do not validate it during booking creation
+        person.passportPhoto = person.passportPhoto || "";
+      // if (!/^https?:\/\/.+\.(jpg|jpeg|png)$/.test(person.passportPhoto)) {
+      //   return res.status(400).json({ msg: 'Passport photo must be a valid URL ending with .jpg, .jpeg, or .png' });
+      // }
+          
+          if (ids.has(person.identifier)) {
+            duplicatedIdentifiers.add(person.identifier);
+          } else {
+            ids.add(person.identifier);
+          }
+        }
+      
+        if (duplicatedIdentifiers.size > 0) {
+          return res.status(400).json({ msg: `Duplicate identifiers found within the provided people: ${Array.from(duplicatedIdentifiers).join(', ')}` });
+        }
 
+      // Check for duplicate identifiers in the database for the given trip
+      const existingTripWithDuplicateIdentifiers1 = await Trip.findOne({
+        _id: serviceId,
+        'details.people.identifier': { $in: Array.from(ids) }
+      });
+      if (existingTripWithDuplicateIdentifiers1) {
+        return res.status(400).json({ msg: 'One or more identifiers already exist for this trip' });
+      }
+    
+    
+      agencyId = service.agencyId;
+      service.availableSeats -= peopleNumber;
+      service.updatedAt = new Date();
+      if (service.availableSeats < 0) {
+        return res.status(400).json({ msg: 'No seats available for this trip' });
+      }
+      await service.save();
 
 
         break;
-    case 'trip':
-        service = await Trip.findById(serviceId);
-        break;
+        case 'trip':
+          service = await Trip.findById(serviceId);
+          if (!service) {
+            return res.status(404).json({ msg: 'Trip not found' });
+          }
+        
+          const numPeople = details.people.length;
+          if (numPeople > service.availableSeats) {
+            return res.status(400).json({ msg: 'Not enough available seats for the requested number of people' });
+          }
+        
+          const identifiers = new Set();
+          const duplicateIdentifiers = new Set();
+        
+          for (const person of details.people) {
+            if (!/^[a-zA-Z\s]+$/.test(person.fullName)) {
+              return res.status(400).json({ msg: 'Full name must contain only letters and spaces' });
+            }
+            if (typeof person.age !== 'number' || person.age < 1 || person.age > 100) {
+              return res.status(400).json({ msg: 'Age must be a number between 1 and 100' });
+            }
+            if (!/^\d{11}$/.test(person.identifier)) {
+              return res.status(400).json({ msg: 'Identifier must be exactly 11 digits' });
+            }
+            if (identifiers.has(person.identifier)) {
+              duplicateIdentifiers.add(person.identifier);
+            } else {
+              identifiers.add(person.identifier);
+            }
+          }
+        
+          if (duplicateIdentifiers.size > 0) {
+            return res.status(400).json({ msg: `Duplicate identifiers found within the provided people: ${Array.from(duplicateIdentifiers).join(', ')}` });
+          }
+        
+          // Check for duplicate identifiers in the database for the given trip
+          const existingTripWithDuplicateIdentifiers = await Trip.findOne({
+            _id: serviceId,
+            'details.people.identifier': { $in: Array.from(identifiers) }
+          });
+          if (existingTripWithDuplicateIdentifiers) {
+            return res.status(400).json({ msg: 'One or more identifiers already exist for this trip' });
+          }
+        
+        
+          agencyId = service.agencyId;
+          service.availableSeats -= numPeople;
+          service.updatedAt = new Date();
+          if (service.availableSeats < 0) {
+            return res.status(400).json({ msg: 'No seats available for this trip' });
+          }
+          await service.save();
+        
+          break;        
+        
     case 'scholarship':
         service = await Scholarship.findById(serviceId);
+        if (!service) {
+          return res.status(404).json({ msg: 'Flight not found' });
+        }
+        agencyId = service.agencyId;
         if(!details.fullName || !details.email || !details.university ){
           return res.status(400).json({ msg: 'Missing required scholarship details' });
         }
@@ -289,10 +409,29 @@ if (serviceType === 'flight' || serviceType === 'trip') {
 else if (serviceType === 'scholarship' ) {
   totalPrice = service.price * (1 - (service.priceDiscount / 100)) ;
 }
+if(serviceType === 'car'){
+  const conflictingBookings = await Booking.find({
+    serviceId,
+    bookingType: 'car',
+    $or: [
+      { 'details.startDate': { $lt: details.endDate, $gt: details.startDate } },
+      { 'details.endDate': { $lt: details.endDate, $gt: details.startDate } },
+      { 'details.startDate': { $lte: details.startDate }, 'details.endDate': { $gte: details.endDate } }
+    ]
+  });
+  
+  if (conflictingBookings.length > 0) {
+    return res.status(400).json({ msg: 'Car is already booked for the specified date range' });
+  }
+}
+
+
+details.agencyId = agencyId;
 const booking = new Booking({
   user: req.user.id,
   bookingType: serviceType,
   serviceId,
+  agencyId,
   totalPrice: totalPrice,
   details
 });
@@ -403,6 +542,29 @@ exports.getUserBooking = catchAsync(async (req, res, next) => {
     return res.status(403).json({ message: 'Cannot cancel a cancelled or confirmed booking' });
   }
   if (booking.status === 'pending payment'){
+    if (booking.bookingType==='trip' ){
+      const trip = await Trip.findById(booking.details.serviceId);
+      if (!trip) {
+        return res.status(404).json({ message: 'Trip not found' });
+      }
+  
+      // Update the availableSeats
+      const numPeople = booking.details.people.length;
+      trip.availableSeats += numPeople;
+      trip.updatedAt = new Date();
+      await trip.save();
+    }else if(booking.bookingType ==='flight'){
+      const flight = await Flight.findById(booking.details.serviceId);
+      if (!flight) {
+        return res.status(404).json({ message: 'flight not found' });
+      }
+  
+      // Update the availableSeats
+      const numPeople = booking.details.people.length;
+      flight.availableSeats += numPeople;
+      flight.updatedAt = new Date();
+      await flight.save();
+    }
     booking.status = 'cancelled';
     await booking.save();
     res.status(200).json({ message: 'Booking cancelled successfully' });
@@ -410,3 +572,53 @@ exports.getUserBooking = catchAsync(async (req, res, next) => {
 
 })
 
+
+
+exports.uploadPassportPhotos = catchAsync(async (req, res, next) => {
+  try {
+    const { bookingId } = req.params;
+    const files = req.files;
+
+    console.log('Received request to upload passport photos');
+    console.log('Booking ID:', bookingId);
+    console.log('Files:', files);
+
+    if (!files || files.length === 0) {
+      return res.status(400).json({ message: 'No photos uploaded' });
+    }
+
+    const booking = await Booking.findById(bookingId);
+    if (!booking) {
+      return res.status(404).json({ message: 'Booking not found' });
+    }
+
+    console.log('Booking found:', booking);
+
+    const people = booking.details.people;
+
+    console.log('People in booking:', people);
+
+    if (files.length !== people.length) {
+      return res.status(400).json({ message: 'Number of photos does not match the number of people' });
+    }
+
+    for (let i = 0; i < people.length; i++) {
+      const file = files[i];
+      console.log('Processing file for person:', people[i]);
+      const photoUrl = await uploadImages(file);
+      console.log('Photo URL:', photoUrl);
+      people[i].passportPhoto = photoUrl;
+    }
+
+    // Prevent `createdAt` from being updated
+    booking.markModified('details.people');
+    await booking.save();
+
+    console.log('Booking updated successfully');
+
+    return res.status(200).json({ message: 'Passport photos uploaded successfully', people });
+  } catch (error) {
+    console.error('Error uploading passport photos:', error);
+    return res.status(500).json({ message: 'Error uploading passport photos', error: error.message });
+  }
+});

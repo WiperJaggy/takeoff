@@ -17,11 +17,6 @@ serviceId:{
 description:{
 type:String,
 },
-licenseExpiryDate:{
-    type: Date,
-    required: true,
-    default: Date.now()
-},
 addedAt:{
     type: Date,
     default: Date.now()

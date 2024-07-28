@@ -12,8 +12,8 @@ router.route('/:id').get(carController.getCar);
 
 router.use(authController.protectAgency);
 
-router.route('/').post(carController.createCar);
-router.post('/upload-car-photo/:carId', upload.array('files', 4),carController.uploadCarPhotos)
-router.route('/:id/:agencyId').patch(carController.updateCar);
-router.route('/:id').delete(carController.deleteCar);
+router.route('/').post(authController.checkAgencyStatus,carController.createCar);
+router.post('/upload-car-photo/:carId',authController.checkAgencyStatus, upload.array('files', 4),carController.uploadCarPhotos)
+router.route('/:id/:agencyId').patch(authController.checkAgencyStatus,carController.updateCar);
+router.route('/:id').delete(authController.checkAgencyStatus,carController.deleteCar);
 module.exports = router;

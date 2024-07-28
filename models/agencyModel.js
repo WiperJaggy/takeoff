@@ -2,7 +2,6 @@ const mongoose = require('mongoose');
 const validator = require('validator');
 const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
-
 const agencySchema = new mongoose.Schema({
     name: {
         type: String,
@@ -183,6 +182,12 @@ const agencySchema = new mongoose.Schema({
     ratingCount:{
         type:Number,
         default:0
+    }, 
+     status: {
+      type: String,
+      enum: ['enabled', 'disabled'],
+      default: 'enabled',
+      select:false
     },
 createdAt:{type: Date,
     default: Date.now()
@@ -235,15 +240,20 @@ agencySchema.methods.createPasswordResetToken = function(){
     this.passwordResetExpires = Date.now()+10*60*1000;
     return resetToken;
 }
-agencySchema.pre('save', function(next) {
-    // Only run password validation if the password or passwordConfirm fields are modified
-    if (!this.isModified('password') && !this.isModified('passwordConfirm')) {
-      return next();
-    }
-  
-    // Run the password-related validation
-    this.validate(['password', 'passwordConfirm'], next);
-  });
+// agencySchema.pre('save', async function(next) {
+//   // Only run password validation if the password or passwordConfirm fields are modified
+//   if (!this.isModified('password') && !this.isModified('passwordConfirm')) {
+//     return next();
+//   }
+
+//   try {
+//     // Run the password-related validation
+//     await this.validate(['password', 'passwordConfirm']);
+//     next();
+//   } catch (err) {
+//     next(err);
+//   }
+// });
 const Agency = mongoose.model('Agency', agencySchema);
 
 module.exports = Agency;

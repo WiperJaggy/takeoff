@@ -7,10 +7,12 @@ const agencyServiceController = require('./../controllers/agencyServiceControlle
 const upload = require('../config/multer');
 //protect all the routs after this middleware
 router.use(authController.protectAgency);
-router.route('/upload-agency-photo').post( upload.single('file'),agencyController.uploadAgencyPhoto);
+router.route('/get-service-bookings/:serviceType').get(agencyController.getBookingsByServiceType);
+router.route('/get-bookings/:serviceId').get(agencyController.getBookingsByServiceId)
+router.route('/upload-agency-photo').post(authController.checkAgencyStatus, upload.single('file'),agencyController.uploadAgencyPhoto);
 router.route('/').get(agencyServiceController.getAgencyServices);
 router.route('/:id').get(agencyServiceController.getMyService);
-router.route('/add-services').post(agencyServiceController.createService);
-router.route('/update-a-service/:id').patch(agencyServiceController.updateService);
-router.route('/delete-a-service/:id').delete(agencyServiceController.deleteAgencyService);
+router.route('/add-services').post(authController.checkAgencyStatus,agencyServiceController.createService);
+router.route('/update-a-service/:id').patch(authController.checkAgencyStatus,agencyServiceController.updateService);
+router.route('/delete-a-service/:id').delete(authController.checkAgencyStatus,agencyServiceController.deleteAgencyService);
 module.exports = router;

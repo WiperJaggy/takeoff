@@ -8,7 +8,7 @@ router.route('/').get(flightController.getAllFlights);
 router.route('/:id').get(flightController.getFlight);
 router.use(authController.protectAgency);
 
-router.route('/').post( flightController.createFlight);
-router.route('/:id/:agencyId').patch(flightController.updateFlight);
-router.route('/:id').delete(flightController.deleteFlight);
+router.route('/').post( authController.checkAgencyStatus,flightController.createFlight);
+router.route('/:id/:agencyId').patch(authController.checkAgencyStatus,flightController.updateFlight);
+router.route('/:id').delete(authController.checkAgencyStatus,flightController.deleteFlight);
 module.exports = router;
