@@ -33,7 +33,7 @@ exports.getCheckoutSession = catchAsync(async (req, res, next) => {
     payment_method_types: ['card'],
     mode: 'payment',
     success_url: `${process.env.PAYMENT_URL}/payment/checkout-success?bookingId=${booking._id}&session_id={CHECKOUT_SESSION_ID}&userId=${req.user.id}`,
-    cancel_url: `${process.env.PAYMENT_URL}/booking/${booking._id}`,
+    cancel_url: `${process.env.PAYMENT_URL}/booking//${booking._id}`,
     customer_email: booking.user.email,
     client_reference_id: booking.serviceId.toString(),
     line_items: [
@@ -42,7 +42,7 @@ exports.getCheckoutSession = catchAsync(async (req, res, next) => {
           currency: 'usd',
           product_data: {
             name: booking.bookingType,
-            images: [],
+            images: booking.serviceId.carPhotos,
           },
           unit_amount: booking.totalPrice * 100,
         },
@@ -104,21 +104,3 @@ res.status(200).json({
   message:" payment has been cancelled."
 })
 });
-// app.post('/create-checkout-session', async (req, res) => {
-//   const session = await stripe.checkout.sessions.create({
-//     line_items: [
-//       {
-//         // Provide the exact Price ID (for example, pr_1234) of the product you want to sell
-//         price: '200',
-//         quantity: 1,
-//       },
-//     ],
-//     mode: 'payment',
-//     success_url: `${process.env.PAYMENT_URL}/checkout-success`,
-//     cancel_url: `${process.env.PAYMENT_URL}/booking`,
-//   });
-
-//   res.redirect(303, session.url);
-// });
-
-// app.listen(4242, () => console.log('Running on port 4242'));

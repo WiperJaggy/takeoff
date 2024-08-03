@@ -6,8 +6,11 @@ const requestSchema = new mongoose.Schema(
         url: { type: String, required: true },
         ip: { type: String },
         useragent: { type: String },
-        body: { type: Object },
-        timestamp: { type: Date, default: Date.now },
+        requestBody: { type: mongoose.Schema.Types.Mixed },
+        headers: { type: mongoose.Schema.Types.Mixed },
+        statusCode: { type: Number },
+        responseBody: { type: String },
+        timestamp: { type: Date, default: Date.now }, 
     },
 );
 

@@ -33,6 +33,7 @@ const tripSchema = new mongoose.Schema({
                 max: 100,
                 default: 0,
             },
+            tripPhotos: [{ type: String, maxLength: 255 }],
             startLocation:{
          //GeoJSon
          type:{

@@ -3,6 +3,7 @@ const AppError = require('./../utils/appError');
 const Trip = require('./../models/tripModel');
 const Service = require('./../models/serviceModel');
 const AgencyService = require('./../models/agencyServiceModel');
+const uploadImages = require('./../utils/uploadFiles')
 
 exports.createTrip = catchAsync(async (req, res, next) => {
   // Extract the necessary data from the request body
@@ -144,3 +145,31 @@ const {agencyId ,...updates} = req.body;
       data: null
     });
   });
+
+  exports.uploadtripPhotos =catchAsync( async(req, res,next) =>{
+    const { tripId } = req.params;
+  const photoUrls = [];
+
+  if (req.files.length > 10) {
+    return res.status(400).json({ message: 'Maximum of 4 photos can be uploaded.' });
+  }
+
+  for (const file of req.files) {
+    try {
+      const photoUrl = await uploadImages(file);
+      if (photoUrl !== 'No file uploaded.' && photoUrl !== 'The uploaded file is not an image.') {
+        photoUrls.push(photoUrl);
+      }
+    } catch (err) {
+      console.error('Error uploading photo:', err);
+    }
+  }
+
+  // Save the photo URLs to the database
+  await Trip.updateOne(
+    { _id: tripId },
+    { $set: { tripPhotos: photoUrls } }
+  );
+
+  res.status(200).json({ message: 'trip photos uploaded successfully', photoUrls });
+  })

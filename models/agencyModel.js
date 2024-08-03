@@ -187,7 +187,6 @@ const agencySchema = new mongoose.Schema({
       type: String,
       enum: ['enabled', 'disabled'],
       default: 'enabled',
-      select:false
     },
 createdAt:{type: Date,
     default: Date.now()

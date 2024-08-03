@@ -93,3 +93,14 @@ exports.disableAgency = catchAsync(async (req, res, next) => {
     return res.status(500).json({ msg: 'Error disabling agency' });
   }
 });
+
+exports.getAllAgencies = catchAsync(async(req,res,next)=>{
+  const agencies = await Agency.find();
+  res.status(200).json({
+    status:'success',
+    results: agencies.length,
+    data:{
+      agencies
+    }
+  })
+})

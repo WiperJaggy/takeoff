@@ -9,6 +9,7 @@ router.use(authController.protect);
 router.patch('/enable-agency',adminController.enableAgency);
 router.patch('/disable-agency',adminController.disableAgency);
 router.get('/dashboard', adminController.getAdminDashboard);
+router.get('/dashboard/agencies',adminController.getAllAgencies)
 router.get('/dashboard/:id',authController.restrictTo('admin'), adminController.getAgnecyRequest);
 router.patch('/requests/:id',adminController.updateRequestStatus);
 //router.get('/get-weekly-report/:id',adminController.getWeeklyReport)

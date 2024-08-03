@@ -350,7 +350,7 @@ exports.resetPassword = catchAsync(async (req, res, next) => {
         //3.if so, update password
         user.password = req.body.password;
         user.passwordConfirm = req.body.passwordConfirm;
-        await user.save();
+        await user.save({ validateBeforeSave: false });
         //4. log user in , send JWT
     
         createSendToken(user,200,res)
@@ -365,7 +365,7 @@ exports.resetPassword = catchAsync(async (req, res, next) => {
       //3.if so, update password
       agency.password = req.body.password;
       agency.passwordConfirm = req.body.passwordConfirm;
-      await agency.save();
+      await agency.save({ validateBeforeSave: false });
       //4. log user in , send JWT
   
       createSendToken(agency,200,res)
