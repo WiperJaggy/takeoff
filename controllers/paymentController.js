@@ -29,11 +29,12 @@ exports.getCheckoutSession = catchAsync(async (req, res, next) => {
     return next(new Error('Booking is already confirmed'))
   }
   // Create a Stripe Checkout session
+  const origin = req.headers.origin || 'http://localhost:8080';
   const session = await stripe.checkout.sessions.create({
     payment_method_types: ['card'],
     mode: 'payment',
-    success_url: `${process.env.PAYMENT_URL}/payment/checkout-success?bookingId=${booking._id}&session_id={CHECKOUT_SESSION_ID}&userId=${req.user.id}`,
-    cancel_url: `${process.env.PAYMENT_URL}/booking//${booking._id}`,
+    success_url: `${origin}/payment/checkout-success?bookingId=${booking._id}&session_id={CHECKOUT_SESSION_ID}&userId=${req.user.id}`,
+    cancel_url: `${origin}/cancel-checkout.html/`,
     customer_email: booking.user.email,
     client_reference_id: booking.serviceId.toString(),
     line_items: [
