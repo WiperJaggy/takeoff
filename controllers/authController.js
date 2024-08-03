@@ -9,6 +9,8 @@ const crypto = require('crypto');
 const bcrypt = require('bcrypt')
 const { updateSearchIndex } = require('../models/requests');
 const AgencyRequest = require('./../models/agencyRequestModel');
+const AgencyService = require('../models/agencyServiceModel');
+const Service = require('./../models/serviceModel')
 
 const signToken = (id) => {
   return jwt.sign({ id }, process.env.ACCESS_TOKEN_SECRET, {
@@ -157,6 +159,15 @@ exports.registerAgency = catchAsync(async (req, res, next) => {
     lisenceCopy: newAgency.cotoNumber,
   });
 
+  const availableServices = await Service.find();
+
+  // Create AgencyService for each available service
+  for (const service of availableServices) {
+    await AgencyService.create({
+      agencyId: newAgency._id,
+      serviceId: service._id,
+    });
+  }
   // Send the response after creating both documents
   createSendToken(newAgency, 201, res);
 });
