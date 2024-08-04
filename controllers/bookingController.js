@@ -245,7 +245,7 @@ res.status(201).json({
 })
 })
 exports.getUserBookings = catchAsync(async (req, res, next) => {
-  const {userId} = req.params
+  const {userId} = req.body
   const bookings = await Booking.find({ user:userId});
 
   // Check if the current user is the same as the user who booked the car
